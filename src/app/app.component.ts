@@ -22,6 +22,12 @@ export class AppComponent implements OnInit {
   GET_SINGLE_URL = "https://prod-15.uksouth.logic.azure.com/workflows/aec09bd28f7e4a9bb1538921d97f53a8/triggers/When_a_HTTP_request_is_received/paths/invoke/gotv/highlight/%7Bid%7D?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=FDtM0B7VTmtzmZ9fGJTwTMruaUOtTfsBkQG9650S-3o"
   BLOB_ACCOUNT = "https://depaysokblob.blob.core.windows.net";
   POST_URL = "https://prod-24.uksouth.logic.azure.com:443/workflows/bae358fbbbd54c2e89764542b2a8e243/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=JHxzsobTTeHaSTWXQjRleJ9gIY15WnMcqMc2-Fzb2ag"
+  DELETE_URL = "https://prod-09.uksouth.logic.azure.com/workflows/508ce266b14f4c7b90b2a0820b5a8778/triggers/When_a_HTTP_request_is_received/paths/invoke/gotv/delete/%7Bid%7D?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=lN6Yl8UIhbgvT7gml38jmsBcp0HahmgR3vbWtPq97TQ";
+  account = "depaysokblob";
+  sasToken = "sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2025-02-01T19:16:40Z&st=2024-12-02T11:16:40Z&spr=https&sig=no49J2h21l%2Fjn4xy7d3kH%2Bklc7sOK438lv6JGz9z04I%3D";
+  containerName = "multimedia";
+  blobServiceClient = new BlobServiceClient(`https://${(this.account)}.blob.core.windows.net/?${this.sasToken}`);
+  containerClient = this.blobServiceClient.getContainerClient(this.containerName);
 
   title = 'AngularGOTV';
   highlights: any = [];
@@ -50,17 +56,12 @@ export class AppComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((result) => {
 
-      const account = "depaysokblob";
-      const sasToken = "sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2025-02-01T19:16:40Z&st=2024-12-02T11:16:40Z&spr=https&sig=no49J2h21l%2Fjn4xy7d3kH%2Bklc7sOK438lv6JGz9z04I%3D";
-      const containerName = "multimedia";
-      const blobServiceClient = new BlobServiceClient(`https://${account}.blob.core.windows.net/?${sasToken}`);
-      const containerClient = blobServiceClient.getContainerClient(containerName);
       const blobName = `${new Date().getTime()}-${result.file.name}`;
-      const blobClient = containerClient.getBlockBlobClient(blobName);
+      const blobClient = this.containerClient.getBlockBlobClient(blobName);
 
       const postData = new FormData();
       postData.set('id', blobName);
-      postData.set('filePath', `/${containerName}/${blobName}`);
+      postData.set('filePath', `/${this.containerName}/${blobName}`);
       postData.set('title', result.metadata.title);
       postData.set('description', result.metadata.description);
       postData.set('sport', result.metadata.sport);
@@ -76,7 +77,7 @@ export class AppComponent implements OnInit {
 
       blobClient.uploadData(result.file, { blobHTTPHeaders: { blobContentType: result.file.type } })
         .then(() => {
-          const fileUrl = `https://${account}.blob.core.windows.net/${containerName}/${blobName}`;
+          const fileUrl = `https://${this.account}.blob.core.windows.net/${this.containerName}/${blobName}`;
           postData.set('fileUrl', fileUrl);
           this.httpClient.post<any>(this.POST_URL, postData).subscribe({
             next: (data: any) => {
@@ -96,5 +97,14 @@ export class AppComponent implements OnInit {
           })
         })
     });
+  }
+
+  deleteHighlight(id: string) {
+    let delete_url = this.DELETE_URL.replace("%7Bid%7D", id);
+    this.httpClient.delete(delete_url).subscribe({
+      next: (data: any) => {
+        this.highlights = this.highlights.filter((highlight:any) => highlight.id !== id);
+      }
+    })
   }
 }

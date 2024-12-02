@@ -108,8 +108,6 @@ export class AppComponent implements OnInit {
   openViewHighlightDialog(id: string) {
     let get_single = this.GET_SINGLE_URL.replace("%7Bid%7D", id);
 
-
-
     this.httpClient.get(get_single).subscribe({
       next: (data: any) => {
         console.log(data);
@@ -121,6 +119,7 @@ export class AppComponent implements OnInit {
         })
       }
     })
+
 
   }
 

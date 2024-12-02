@@ -15,15 +15,15 @@ import {MatSnackBar, MatSnackBarModule} from '@angular/material/snack-bar';
 import {HttpClient} from '@angular/common/http';
 
 @Component({
-  selector: 'add-highlight-dialog',
-  templateUrl: './new.highlight.details.html',
+  selector: 'update-highlight-dialog',
+  templateUrl: './update.highlight.details.html',
   providers: [HttpClient],
   imports: [ReactiveFormsModule,MatSnackBarModule, FormsModule, MatFormFieldModule, MatListModule, MatInputModule, MatButtonModule, MatDialogModule, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose, MatSelectionList, NgForOf, KeyValuePipe, MatExpansionModule, MatSelect, MatOption],
 })
-export class NewHighlightComponent implements OnInit {
-  metadata: any;
+export class UpdateHighlightComponent implements OnInit {
+  highlight = inject(MAT_DIALOG_DATA).highlight;
   file: File | null = null;
-  readonly dialogRef = inject(MatDialogRef<NewHighlightComponent>);
+  readonly dialogRef = inject(MatDialogRef<UpdateHighlightComponent>);
 
 
   constructor(
@@ -32,23 +32,14 @@ export class NewHighlightComponent implements OnInit {
 
   ngOnInit() {
 
-    this.metadata = this.formBuilder.group({
-      title: ['', Validators.required],
-      description: ['', Validators.required],
-      sport: ['', Validators.required],
-      event: ['', Validators.required],
+    this.highlight= this.formBuilder.group({
+      title: [this.highlight.title, Validators.required],
+      description: [this.highlight.description, Validators.required],
+      sport: [this.highlight.sport, Validators.required],
+      event: [this.highlight.event, Validators.required],
     });
   }
 
-
-  onFileSelected(event:any) {
-    const file = event.target.files[0];
-    if (file) {
-      this.file = file;
-
-
-    }
-  }
 
   onNoClick(): void {
     this.dialogRef.close();
@@ -56,12 +47,12 @@ export class NewHighlightComponent implements OnInit {
 
 
   onSubmit(): void {
-    if (this.metadata.valid) {
-      const metadata = this.metadata.value;
+    if (this.highlight.valid) {
+      const metadata = this.highlight.value;
 
+      console.log(metadata);
       this.dialogRef.close({
         metadata: metadata,
-        file: this.file,
       });
     }
   }

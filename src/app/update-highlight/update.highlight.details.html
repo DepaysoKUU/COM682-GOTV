@@ -1,0 +1,29 @@
+<mat-dialog-content class="mat-typography">
+  <h2>Enter Highlight Details</h2>
+  <form [formGroup]="highlight">
+    <mat-form-field>
+      <mat-label>Title</mat-label>
+      <input matInput type="input" formControlName="title">
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Description</mat-label>
+      <input matInput formControlName="description">
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Sport</mat-label>
+      <input matInput formControlName="sport">
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Event</mat-label>
+      <input matInput formControlName="event">
+    </mat-form-field>
+
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onNoClick()">Cancel</button>
+  <button mat-button (click)="onSubmit()">Submit</button>
+</mat-dialog-actions>

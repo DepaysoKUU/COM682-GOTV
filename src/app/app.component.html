@@ -1,14 +1,14 @@
 <div class="container" >
   <div class="row">
 
-    <mat-card *ngFor="let highlight of highlights">
+    <mat-card *ngFor="let highlight of highlights" (click)="openViewHighlightDialog(highlight.id)">
       <mat-card-header>
         <mat-card-title>{{highlight.title}}</mat-card-title>
       </mat-card-header>
       <mat-card-content>
 
-        <img mat-card-image [src]="this.BLOB_ACCOUNT + highlight.filepath" alt="Highlight of {{highlight.title}}" *ngIf="highlight.type=='image'" width="800px">
-        <video [src]="this.BLOB_ACCOUNT + highlight.filepath" *ngIf="highlight.type=='video'" width="800px" controls></video>
+        <img mat-card-image [src]="this.BLOB_ACCOUNT + highlight.filepath" alt="Highlight of {{highlight.title}}" *ngIf="highlight.type=='image'" height="400px">
+        <video [src]="this.BLOB_ACCOUNT + highlight.filepath" *ngIf="highlight.type=='video'" height="400px" controls></video>
         <mat-list role="list">
           <mat-list-item role="listItem"><b>Description</b>: {{highlight.description}}</mat-list-item>
           <mat-list-item role="listItem"><b>Sport</b>: {{highlight.sport}}</mat-list-item>
@@ -17,6 +17,9 @@
       </mat-card-content>
 
       <button mat-raised-button (click)="deleteHighlight(highlight.id)">Delete Highlight</button>
+
+
+
 
     </mat-card>
 

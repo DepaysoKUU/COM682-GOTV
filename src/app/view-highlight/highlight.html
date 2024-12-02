@@ -1,0 +1,23 @@
+<div class="container" >
+  <div class="row">
+
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>{{highlight.title}}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+
+        <img mat-card-image [src]="this.blob_url" alt="Highlight of {{highlight.title}}" *ngIf="highlight.type=='image'" height="400px">
+        <video [src]="this.blob_url" *ngIf="highlight.type=='video'" height="400px" controls></video>
+        <mat-list role="list">
+          <mat-list-item role="listItem"><b>Description</b>: {{highlight.description}}</mat-list-item>
+          <mat-list-item role="listItem"><b>Sport</b>: {{highlight.sport}}</mat-list-item>
+          <mat-list-item role="listItem"><b>Event</b>: {{highlight.event}}</mat-list-item>
+          <mat-list-item role="listItem"><b>Total Views</b>: {{highlight.totalViews}}</mat-list-item>
+        </mat-list>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+
+</div>

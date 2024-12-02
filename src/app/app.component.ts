@@ -7,6 +7,7 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import {BlobServiceClient} from '@azure/storage-blob';
 import {NewHighlightComponent} from '../new-highlight/new.highlight.component';
+import {ViewHighlightComponent} from './view-highlight/view-highlight.component';
 
 @Component({
   selector: 'app-root',
@@ -87,11 +88,7 @@ export class AppComponent implements OnInit {
                 next: (data:any) => {
                   console.log(data)
                   this.highlights = [...this.highlights, data["Documents"][0]];
-                  this.cdr.detectChanges();
                 },
-                error: err => {
-                  console.log(err);
-                }
               })
             }
           })
@@ -107,4 +104,24 @@ export class AppComponent implements OnInit {
       }
     })
   }
+
+  openViewHighlightDialog(id: string) {
+    let get_single = this.GET_SINGLE_URL.replace("%7Bid%7D", id);
+
+
+
+    this.httpClient.get(get_single).subscribe({
+      next: (data: any) => {
+        console.log(data);
+        this.dialog.open(ViewHighlightComponent, {
+          data: {
+            highlight: data["Documents"][0],
+            blob_url: this.BLOB_ACCOUNT + data["Documents"][0].filepath
+          }
+        })
+      }
+    })
+
+  }
+
 }

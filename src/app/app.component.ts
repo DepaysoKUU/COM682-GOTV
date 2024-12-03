@@ -104,72 +104,90 @@ export class AppComponent implements OnInit {
       
             if (result.file.type.startsWith('image')) {
               postData.set('type', "image");
+
+              
+            let reader = new FileReader();
+            reader.readAsDataURL(result.file);
+            reader.onload = () => {
+              if (reader.result !== null && typeof reader.result === 'string') {
+                let base64 = reader.result.split(',')[1];
+      
+                let headers = new HttpHeaders();
+                headers = headers.set('Content-Type', 'application/json');
+                headers = headers.set('Ocp-Apim-Subscription-Key', this.CONTENT_SAFETY_KEY);
+      
+                let body =
+                  {
+                    "image": {
+                      "content": base64
+                    },
+                    "categories": ["Hate", "SelfHarm", "Sexual", "Violence"],
+                    "outputType": "FourSeverityLevels"
+                  }
+      
+                this.httpClient.post(this.CONTENT_SAFETY_ENDPOINT, body, {headers: headers}).subscribe({
+                  next: (response: any) => {
+                    let scores = []
+                    let categories = response.categoriesAnalysis;
+      
+                    for (let category of categories) {
+                      scores.push(category.severity);
+                    }
+      
+                    const containsNonZero = scores.some(score => score !== 0);
+      
+                    if (containsNonZero) {
+                      alert("NSFW Image detected");
+                    } else {
+                      blobClient.uploadData(result.file, { blobHTTPHeaders: { blobContentType: result.file.type } })
+                        .then(() => {
+                          const fileUrl = `https://${this.account}.blob.core.windows.net/${this.containerName}/${blobName}`;
+                          postData.set('fileUrl', fileUrl);
+                          this.httpClient.post<any>(this.POST_URL, postData).subscribe({
+                            next: (data: any) => {
+                              let get_url = this.GET_SINGLE_URL.replace("%7Bid%7D", blobName)
+      
+                              this.httpClient.get(get_url).subscribe({
+                                next: (data:any) => {
+                                  console.log(data)
+                                  this.highlights = [...this.highlights, data["Documents"][0]];
+                                },
+                              })
+                            }
+                          })
+                        })
+                    }
+                  }
+                })
+              }
+            }
+              
             } else if (result.file.type.startsWith('video')) {
               postData.set('type', 'video');
+
+              blobClient.uploadData(result.file, { blobHTTPHeaders: { blobContentType: result.file.type } })
+              .then(() => {
+                const fileUrl = `https://${this.account}.blob.core.windows.net/${this.containerName}/${blobName}`;
+                postData.set('fileUrl', fileUrl);
+                this.httpClient.post<any>(this.POST_URL, postData).subscribe({
+                  next: (data: any) => {
+                    let get_url = this.GET_SINGLE_URL.replace("%7Bid%7D", blobName)
+
+                    this.httpClient.get(get_url).subscribe({
+                      next: (data:any) => {
+                        console.log(data)
+                        this.highlights = [...this.highlights, data["Documents"][0]];
+                      },
+                    })
+                  }
+                })
+              })
             } else {
               postData.set('type', 'unknown');
             }
-
-            let reader = new FileReader();
-      reader.readAsDataURL(result.file);
-      reader.onload = () => {
-        if (reader.result !== null && typeof reader.result === 'string') {
-          let base64 = reader.result.split(',')[1];
-
-          let headers = new HttpHeaders();
-          headers = headers.set('Content-Type', 'application/json');
-          headers = headers.set('Ocp-Apim-Subscription-Key', this.CONTENT_SAFETY_KEY);
-
-          let body =
-            {
-              "image": {
-                "content": base64
-              },
-              "categories": ["Hate", "SelfHarm", "Sexual", "Violence"],
-              "outputType": "FourSeverityLevels"
-            }
-
-          this.httpClient.post(this.CONTENT_SAFETY_ENDPOINT, body, {headers: headers}).subscribe({
-            next: (response: any) => {
-              let scores = []
-              let categories = response.categoriesAnalysis;
-
-              for (let category of categories) {
-                scores.push(category.severity);
-              }
-
-              const containsNonZero = scores.some(score => score !== 0);
-
-              if (containsNonZero) {
-                alert("NSFW Image detected");
-              } else {
-                blobClient.uploadData(result.file, { blobHTTPHeaders: { blobContentType: result.file.type } })
-                  .then(() => {
-                    const fileUrl = `https://${this.account}.blob.core.windows.net/${this.containerName}/${blobName}`;
-                    postData.set('fileUrl', fileUrl);
-                    this.httpClient.post<any>(this.POST_URL, postData).subscribe({
-                      next: (data: any) => {
-                        let get_url = this.GET_SINGLE_URL.replace("%7Bid%7D", blobName)
-
-                        this.httpClient.get(get_url).subscribe({
-                          next: (data:any) => {
-                            console.log(data)
-                            this.highlights = [...this.highlights, data["Documents"][0]];
-                          },
-                        })
-                      }
-                    })
-                  })
-              }
-            }
-          })
+          }
         }
-      }
-      }
-    }
-  })
-      
-      
+      })  
     });
   }
 

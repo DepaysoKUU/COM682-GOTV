@@ -1,7 +1,7 @@
 import {ChangeDetectorRef, Component, inject, OnInit} from '@angular/core';
 import {MatCardModule} from '@angular/material/card';
 import {MatListModule} from '@angular/material/list';
-import {HttpClient} from '@angular/common/http';
+import {HttpClient, HttpHeaders} from '@angular/common/http';
 import {NgForOf, NgIf} from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
@@ -24,6 +24,8 @@ export class AppComponent implements OnInit {
   BLOB_ACCOUNT = "https://depaysokblob.blob.core.windows.net";
   POST_URL = "https://prod-24.uksouth.logic.azure.com:443/workflows/bae358fbbbd54c2e89764542b2a8e243/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=JHxzsobTTeHaSTWXQjRleJ9gIY15WnMcqMc2-Fzb2ag"
   DELETE_URL = "https://prod-09.uksouth.logic.azure.com/workflows/508ce266b14f4c7b90b2a0820b5a8778/triggers/When_a_HTTP_request_is_received/paths/invoke/gotv/delete/%7Bid%7D?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=lN6Yl8UIhbgvT7gml38jmsBcp0HahmgR3vbWtPq97TQ";
+  CONTENT_SAFETY_ENDPOINT = "https://gotv-safety.cognitiveservices.azure.com/contentsafety/image:analyze?api-version=2024-09-01";
+  CONTENT_SAFETY_KEY = "3pYdV5gpGzecOVjyU2K8NXcK2jwCKRUOW0qSJMmnkjrPhcelDQSRJQQJ99ALAC5RqLJXJ3w3AAAHACOGgtYI";
   account = "depaysokblob";
   sasToken = "sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2025-02-01T19:16:40Z&st=2024-12-02T11:16:40Z&spr=https&sig=no49J2h21l%2Fjn4xy7d3kH%2Bklc7sOK438lv6JGz9z04I%3D";
   containerName = "multimedia";
@@ -76,23 +78,62 @@ export class AppComponent implements OnInit {
         postData.set('type', 'unknown');
       }
 
-      blobClient.uploadData(result.file, { blobHTTPHeaders: { blobContentType: result.file.type } })
-        .then(() => {
-          const fileUrl = `https://${this.account}.blob.core.windows.net/${this.containerName}/${blobName}`;
-          postData.set('fileUrl', fileUrl);
-          this.httpClient.post<any>(this.POST_URL, postData).subscribe({
-            next: (data: any) => {
-              let get_url = this.GET_SINGLE_URL.replace("%7Bid%7D", blobName)
 
-              this.httpClient.get(get_url).subscribe({
-                next: (data:any) => {
-                  console.log(data)
-                  this.highlights = [...this.highlights, data["Documents"][0]];
-                },
-              })
+      let reader = new FileReader();
+      reader.readAsDataURL(result.file);
+      reader.onload = () => {
+        if (reader.result !== null && typeof reader.result === 'string') {
+          let base64 = reader.result.split(',')[1];
+
+          let headers = new HttpHeaders();
+          headers = headers.set('Content-Type', 'application/json');
+          headers = headers.set('Ocp-Apim-Subscription-Key', this.CONTENT_SAFETY_KEY);
+
+          let body =
+            {
+              "image": {
+                "content": base64
+              },
+              "categories": ["Hate", "SelfHarm", "Sexual", "Violence"],
+              "outputType": "FourSeverityLevels"
+            }
+
+          this.httpClient.post(this.CONTENT_SAFETY_ENDPOINT, body, {headers: headers}).subscribe({
+            next: (response: any) => {
+              let scores = []
+              let categories = response.categoriesAnalysis;
+
+              for (let category of categories) {
+                scores.push(category.severity);
+              }
+
+              const containsNonZero = scores.some(score => score !== 0);
+
+              if (containsNonZero) {
+                alert("NSFW Image detected");
+              } else {
+                blobClient.uploadData(result.file, { blobHTTPHeaders: { blobContentType: result.file.type } })
+                  .then(() => {
+                    const fileUrl = `https://${this.account}.blob.core.windows.net/${this.containerName}/${blobName}`;
+                    postData.set('fileUrl', fileUrl);
+                    this.httpClient.post<any>(this.POST_URL, postData).subscribe({
+                      next: (data: any) => {
+                        let get_url = this.GET_SINGLE_URL.replace("%7Bid%7D", blobName)
+
+                        this.httpClient.get(get_url).subscribe({
+                          next: (data:any) => {
+                            console.log(data)
+                            this.highlights = [...this.highlights, data["Documents"][0]];
+                          },
+                        })
+                      }
+                    })
+                  })
+              }
             }
           })
-        })
+        }
+      }
     });
   }
 
